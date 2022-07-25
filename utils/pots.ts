@@ -1,5 +1,6 @@
 import AL, { Character, Player } from "alclient"
 import { sleep } from "./randoms";
+import { JsonDB } from 'node-json-db';
 
 
 export async function manaHelper(bot: Character) {
@@ -9,7 +10,7 @@ export async function manaHelper(bot: Character) {
             const mpot0 = bot.locateItem("mpot0")
             if(bot.mp < bot.max_mp - 300 && mpot0) {
                 await bot.useMPPot(mpot0);
-                console.log(bot.name, "Used MP Pot");
+                console.log(bot.name, "Used MP Pot: ", bot.countItem("mpot0"));
             }
         }
     } catch(e) {
@@ -28,7 +29,7 @@ export async function healthHelper(bot: Character) {
             // console.log(hpot0)
             if(bot.hp < bot.max_hp - 200 && hpot0) {
                 await bot.useHPPot(hpot0);
-                console.log(bot.name, "Used HP Pot");
+                console.log(bot.name, "Used HP Pot:", bot.countItem("hpot0"));
             }
         }
     } catch(e) {
@@ -37,20 +38,26 @@ export async function healthHelper(bot: Character) {
     setTimeout(async () => {healthHelper(bot)}, Math.max(100, bot.getCooldown("use_hp")))
 }
 
-export async function buyPotions(bot: Character, minHpPots = 100, minMpPots = 100): Promise<void> {
+export async function buyPotions(bot: Character, minHpPots = 100, minMpPots = 100, db: JsonDB ): Promise<void> {
     try {
         const currentHpPots = bot.countItem("hpot0")
         const currentMpPots = bot.countItem("mpot0")
 
-        if (currentHpPots >= minHpPots && currentMpPots >= minMpPots) return // We don't need any more.
-
+        if (currentHpPots >= minHpPots && currentMpPots >= minMpPots) {
+            db.push("/pots", false)
+            return // We don't need any more.
+        }
+        db.push("/pots",true);
         // We're under the minimum, go buy potions
-        await bot.smartMove("fancypots", { getWithin: AL.Constants.NPC_INTERACTION_DISTANCE / 2 })
-        let potsToBuy = Math.min(100 - bot.countItem("mpot0"), bot.gold / AL.Game.G.items.mpot1.g)
-        if (potsToBuy > 0) await bot.buy("mpot0", potsToBuy)
+        if (!bot.smartMoving) {
+            await bot.smartMove("fancypots")
+        }
+        let mpotsToBuy = Math.min(200 - bot.countItem("mpot0"), bot.gold / AL.Game.G.items.mpot1.g)
+        console.log()
+        if (mpotsToBuy > 0) await bot.buy("mpot0", mpotsToBuy)
 
-        potsToBuy = Math.min(100 - bot.countItem("hpot0"), bot.gold / AL.Game.G.items.hpot1.g)
-        if (potsToBuy > 0) await bot.buy("hpot0", potsToBuy)
+        let hpotsToBuy = Math.min(200 - bot.countItem("hpot0"), bot.gold / AL.Game.G.items.hpot1.g)
+        if (mpotsToBuy > 0) await bot.buy("hpot0", hpotsToBuy)
     } catch(e) {
         console.error(e);
     }

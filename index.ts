@@ -1,5 +1,10 @@
 import AL from "alclient";
 import { mageRun } from "./characters/mage";
+import { JsonDB } from 'node-json-db';
+import { Config } from 'node-json-db/dist/lib/JsonDBConfig'
+
+var db = new JsonDB(new Config("myDataBase", true, false, '/'));
+db.push("/pots",false)
 
 async function run() {
     console.log("Starting...");
@@ -10,7 +15,7 @@ async function run() {
     const mage = await AL.Game.startMage("manarocks", "EU", "I")
     console.log("Characters loaded")
     
-    mageRun(mage) // Run the Mage
+    mageRun(mage, db) // Run the Mage
 
 }
 run()
